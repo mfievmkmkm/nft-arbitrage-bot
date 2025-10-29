@@ -14,28 +14,12 @@ Automated NFT arbitrage trading bot for **Telegram Gifts marketplace** with real
 - 🧠 **Sales history analysis** for price prediction (last 30 days)
 - 💎 **Net profit calculation** accounting for 5% marketplace commission
 
-## 🏗️ Architecture
+## 🔄 How It Works
 
-nft_gift_bot/
-│
-├── 📄 main.py # Entry point & orchestration
-├── 📄 database.py # SQLite ORM layer
-├── 📄 config.example.py # Configuration template
-├── 📄 requirements.txt # Python dependencies
-├── 📝 README.md # Project documentation
-├── 🔒 .gitignore # Git ignore rules
-│
-├── 📁 analyzers/
-│ ├── init.py
-│ └── profit_analyzer.py # Profit calculation engine
-│
-├── 📁 monitors/
-│ ├── init.py
-│ └── portals.py # NFT marketplace API client
-│
-└── 📁 notifications/
-├── init.py
-└── telegram_bot.py # Telegram bot integration
+1. **Monitor** - Scans marketplace every 3 seconds for new listings
+2. **Analyze** - Calculates profit potential using floor prices
+3. **Alert** - Sends Telegram notification if ROI > 10%
+4. **Cache** - Stores data in SQLite to prevent duplicates
 
 ## 🚀 Tech Stack
 
@@ -184,7 +168,7 @@ This is a personal learning project. Code review and feedback welcome, but no ac
 
 ## 📧 Contact
 
-For questions or collaboration: [krogbro@mail.ru/@Elchpachinio]
+For questions or collaboration: krogbro@mail.ru / @Elchpachinio
 
 ---
 
