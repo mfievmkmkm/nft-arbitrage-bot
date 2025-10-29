@@ -1,0 +1,7 @@
+aiohttp>=3.8.0
+python-telegram-bot>=20.0
+pandas
+numpy
+asyncio-throttle
+aiogram>=3.0.0
+aportalsmp>=0.1.0
