@@ -162,7 +162,7 @@ class ProfitAnalyzer:
             else:
                 logger.info(f"Regular backdrop: {backdrop}")
 
-            model_floor = await portals_monitor.get_model_floor(model)
+            model_floor = await portals_monitor.get_model_floor(gift.name, model)
             if not model_floor:
                 logger.warning("Could not get model floor")
                 return None

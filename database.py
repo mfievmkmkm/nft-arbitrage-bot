@@ -1,231 +1,181 @@
-"""
-Database module for NFT Gift Bot.
-Handles SQLite operations for gifts, profit analysis, and statistics.
-"""
-
 import sqlite3
+import json
 import logging
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class Gift:
-    """NFT Gift data model."""
     id: str
-    tg_id: int
     name: str
+    number: int
     price: float
-    collection: str
-    attributes: List[Dict[str, Any]]
-    created_at: str
+    collection_id: str
+    photo_url: str
+    attributes: List[Dict]
+    platform: str = "portals"
+    url: str = ""
+    timestamp: datetime = None
 
-    @classmethod
-    def from_api(cls, data: Dict[str, Any]) -> 'Gift':
-        """Create Gift instance from API response."""
-        return cls(
-            id=data['id'],
-            tg_id=data['tg_id'],
-            name=data['name'],
-            price=float(data.get('price', 0)),
-            collection=data.get('collection', {}).get('name', 'Unknown'),
-            attributes=data.get('attributes', []),
-            created_at=data.get('created_at', '')
-        )
-
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
+        if not self.url:
+            self.url = f"https://portal-market.com/nft/{self.id}"
 
 @dataclass
 class ProfitAnalysis:
-    """Profit analysis result data model."""
     gift_id: str
-    gift_name: str
-    buy_price: float
-    target_price: float
-    profit_ton: float
     profit_percent: float
-    strategy: str
+    risk_score: float
     confidence: float
-    analyzed_at: str = None
-
-    def __post_init__(self):
-        if self.analyzed_at is None:
-            self.analyzed_at = datetime.now().isoformat()
-
+    strategy: str
+    reasoning: str
+    target_price: float
 
 class Database:
-    """SQLite database manager for NFT Gift Bot."""
-
     def __init__(self, db_path: str):
-        """
-        Initialize database connection.
-
-        Args:
-            db_path: Path to SQLite database file
-        """
         self.db_path = db_path
-        self.conn = None
-        self._initialize_db()
+        self.init_database()
 
-    def _initialize_db(self):
-        """Create database tables if they don't exist."""
-        try:
-            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            self.conn.row_factory = sqlite3.Row
-            cursor = self.conn.cursor()
+    def init_database(self):
+        """Инициализация базы данных"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
 
+            # Таблица подарков
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS gifts (
                     id TEXT PRIMARY KEY,
-                    tg_id INTEGER,
-                    name TEXT,
-                    price REAL,
-                    collection TEXT,
+                    name TEXT NOT NULL,
+                    number INTEGER NOT NULL,
+                    price REAL NOT NULL,
+                    collection_id TEXT,
+                    photo_url TEXT,
                     attributes TEXT,
-                    created_at TEXT,
-                    added_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    platform TEXT DEFAULT 'portals',
+                    url TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
 
+            # Таблица анализа прибыли
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS profit_analyses (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    gift_id TEXT,
-                    gift_name TEXT,
-                    buy_price REAL,
-                    target_price REAL,
-                    profit_ton REAL,
-                    profit_percent REAL,
-                    strategy TEXT,
-                    confidence REAL,
-                    analyzed_at TEXT,
+                CREATE TABLE IF NOT EXISTS profit_analysis (
+                    gift_id TEXT PRIMARY KEY,
+                    profit_percent REAL NOT NULL,
+                    risk_score REAL NOT NULL,
+                    confidence REAL NOT NULL,
+                    strategy TEXT NOT NULL,
+                    reasoning TEXT NOT NULL,
+                    target_price REAL NOT NULL,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (gift_id) REFERENCES gifts (id)
                 )
             ''')
 
+            # Таблица обработанных ID для дедупликации
             cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_gifts_tg_id 
-                ON gifts(tg_id)
+                CREATE TABLE IF NOT EXISTS processed_gifts (
+                    id TEXT PRIMARY KEY,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
             ''')
 
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_profit_analyses_gift_id 
-                ON profit_analyses(gift_id)
-            ''')
-
-            self.conn.commit()
+            conn.commit()
             logger.info("Database initialized successfully")
 
-        except sqlite3.Error as e:
-            logger.error(f"Database initialization error: {e}")
-            raise
-
     def save_gift(self, gift: Gift) -> bool:
-        """
-        Save gift to database.
-
-        Args:
-            gift: Gift instance to save
-
-        Returns:
-            bool: True if successful, False otherwise
-        """
+        """Сохранить подарок в БД"""
         try:
-            cursor = self.conn.cursor()
-            cursor.execute('''
-                INSERT OR REPLACE INTO gifts 
-                (id, tg_id, name, price, collection, attributes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                gift.id,
-                gift.tg_id,
-                gift.name,
-                gift.price,
-                gift.collection,
-                str(gift.attributes),
-                gift.created_at
-            ))
-            self.conn.commit()
-            return True
-        except sqlite3.Error as e:
-            logger.error(f"Error saving gift {gift.id}: {e}")
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT OR REPLACE INTO gifts 
+                    (id, name, number, price, collection_id, photo_url, attributes, platform, url, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    gift.id,
+                    gift.name,
+                    gift.number,
+                    gift.price,
+                    gift.collection_id,
+                    gift.photo_url,
+                    json.dumps(gift.attributes),
+                    gift.platform,
+                    gift.url,
+                    gift.timestamp
+                ))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error saving gift: {e}")
             return False
 
     def save_analysis(self, analysis: ProfitAnalysis) -> bool:
-        """
-        Save profit analysis to database.
-
-        Args:
-            analysis: ProfitAnalysis instance to save
-
-        Returns:
-            bool: True if successful, False otherwise
-        """
+        """Сохранить анализ прибыли"""
         try:
-            cursor = self.conn.cursor()
-            cursor.execute('''
-                INSERT INTO profit_analyses 
-                (gift_id, gift_name, buy_price, target_price, profit_ton, 
-                 profit_percent, strategy, confidence, analyzed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                analysis.gift_id,
-                analysis.gift_name,
-                analysis.buy_price,
-                analysis.target_price,
-                analysis.profit_ton,
-                analysis.profit_percent,
-                analysis.strategy,
-                analysis.confidence,
-                analysis.analyzed_at
-            ))
-            self.conn.commit()
-            return True
-        except sqlite3.Error as e:
-            logger.error(f"Error saving analysis for {analysis.gift_id}: {e}")
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT OR REPLACE INTO profit_analysis
+                    (gift_id, profit_percent, risk_score, confidence, strategy, reasoning, target_price)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    analysis.gift_id,
+                    analysis.profit_percent,
+                    analysis.risk_score,
+                    analysis.confidence,
+                    analysis.strategy,
+                    analysis.reasoning,
+                    analysis.target_price
+                ))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error saving analysis: {e}")
             return False
 
-    def get_recent_analyses(self, limit: int = 10) -> List[ProfitAnalysis]:
-        """
-        Get recent profit analyses.
+    def is_processed(self, gift_id: str) -> bool:
+        """Проверить был ли подарок уже обработан"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM processed_gifts WHERE id = ?', (gift_id,))
+            return cursor.fetchone() is not None
 
-        Args:
-            limit: Maximum number of results
+    def mark_processed(self, gift_id: str):
+        """Отметить подарок как обработанный"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('INSERT OR IGNORE INTO processed_gifts (id) VALUES (?)', (gift_id,))
+            conn.commit()
 
-        Returns:
-            List of ProfitAnalysis instances
-        """
-        try:
-            cursor = self.conn.cursor()
+    def get_recent_gifts(self, limit: int = 10) -> List[Gift]:
+        """Получить последние подарки"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
             cursor.execute('''
-                SELECT * FROM profit_analyses 
-                ORDER BY analyzed_at DESC 
+                SELECT id, name, number, price, collection_id, photo_url, attributes, platform, url, timestamp
+                FROM gifts
+                ORDER BY timestamp DESC
                 LIMIT ?
             ''', (limit,))
 
-            rows = cursor.fetchall()
-            return [
-                ProfitAnalysis(
-                    gift_id=row['gift_id'],
-                    gift_name=row['gift_name'],
-                    buy_price=row['buy_price'],
-                    target_price=row['target_price'],
-                    profit_ton=row['profit_ton'],
-                    profit_percent=row['profit_percent'],
-                    strategy=row['strategy'],
-                    confidence=row['confidence'],
-                    analyzed_at=row['analyzed_at']
-                )
-                for row in rows
-            ]
-        except sqlite3.Error as e:
-            logger.error(f"Error fetching recent analyses: {e}")
-            return []
-
-    def close(self):
-        """Close database connection."""
-        if self.conn:
-            self.conn.close()
-            logger.info("Database connection closed")
+            gifts = []
+            for row in cursor.fetchall():
+                gifts.append(Gift(
+                    id=row[0],
+                    name=row[1],
+                    number=row[2],
+                    price=row[3],
+                    collection_id=row[4],
+                    photo_url=row[5],
+                    attributes=json.loads(row[6]) if row[6] else [],
+                    platform=row[7],
+                    url=row[8],
+                    timestamp=datetime.fromisoformat(row[9]) if row[9] else None
+                ))
+            return gifts

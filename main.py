@@ -63,7 +63,7 @@ class NFTGiftBot:
         found_opportunities = 0
 
         try:
-            new_gifts = await self.portals_monitor.scan_new_listings()
+            new_gifts = await self.portals_monitor.scan_new_gifts()
 
             if not new_gifts:
                 return 0

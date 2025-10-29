@@ -1,14 +1,6 @@
-"""
-Portals marketplace monitor.
-
-Monitors new NFT listings, tracks floor prices, and retrieves
-sales history from Telegram Gifts marketplace.
-"""
-
 import logging
 from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
-
 from database import Gift
 import config
 from aportalsmp.gifts import search, marketActivity, filterFloors
@@ -18,12 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class PortalsMonitor:
-    """Monitor for Portals NFT marketplace."""
-
-    PREMIUM_BACKDROPS = ['midnight blue', 'onyx black', 'black']
 
     def __init__(self):
-        """Initialize monitor with caching."""
         self.auth_data = config.PORTALS_AUTH_TOKEN
         self.processed_ids = set()
         self.floor_cache = {}
@@ -31,16 +19,7 @@ class PortalsMonitor:
         self.cache_ttl = 1800
 
     def is_monochrome(self, model: str, backdrop: str) -> bool:
-        """
-        Check if NFT has monochrome color combination.
-
-        Args:
-            model: NFT model name
-            backdrop: NFT backdrop color
-
-        Returns:
-            bool: True if monochrome
-        """
+        """Проверка монохрома"""
         if not model or not backdrop:
             return False
 
@@ -51,132 +30,111 @@ class PortalsMonitor:
             'yellow': ['yellow', 'gold', 'golden', 'amber', 'lemon'],
             'purple': ['purple', 'violet', 'lavender', 'plum', 'amethyst'],
             'pink': ['pink', 'rose', 'magenta', 'fuchsia'],
-            'orange': ['orange', 'coral', 'peach', 'tangerine'],
-            'brown': ['brown', 'chocolate', 'coffee', 'sepia', 'tan'],
-            'gray': ['gray', 'grey', 'silver', 'charcoal'],
-            'white': ['white', 'ivory', 'cream', 'pearl']
+            'brown': ['brown', 'chocolate', 'coffee', 'tan', 'beige'],
+            'gray': ['gray', 'grey', 'silver', 'steel', 'charcoal'],
+            'black': ['black', 'onyx', 'ebony', 'midnight'],
+            'white': ['white', 'ivory', 'pearl', 'snow']
         }
 
         model_lower = model.lower()
         backdrop_lower = backdrop.lower()
 
-        for color_group in color_groups.values():
-            model_match = any(color in model_lower for color in color_group)
-            backdrop_match = any(color in backdrop_lower for color in color_group)
-
-            if model_match and backdrop_match:
+        for color_name, color_variations in color_groups.items():
+            model_has_color = any(color in model_lower for color in color_variations)
+            backdrop_has_color = any(color in backdrop_lower for color in color_variations)
+            if model_has_color and backdrop_has_color:
                 return True
 
         return False
 
     def is_premium_backdrop(self, backdrop: str) -> bool:
-        """
-        Check if backdrop is premium rarity.
-
-        Args:
-            backdrop: Backdrop color name
-
-        Returns:
-            bool: True if premium
-        """
+        """Проверка премиум фона"""
         if not backdrop:
             return False
-        return backdrop.lower() in self.PREMIUM_BACKDROPS
+        premium = ['midnight blue', 'onyx black', 'black']
+        return backdrop.lower() in premium
 
-    async def scan_new_listings(self) -> List[Gift]:
-        """
-        Scan marketplace for new NFT listings.
-
-        Returns:
-            List of new Gift instances
-        """
+    async def scan_new_gifts(self) -> List[Gift]:
+        """Сканирование новых NFT через search с retry"""
         max_retries = 3
 
-        for attempt in range(1, max_retries + 1):
+        for attempt in range(max_retries):
             try:
-                logger.info(f"Scanning NEW LISTINGS (attempt {attempt}/{max_retries})...")
+                logger.info(f"Scanning latest gifts using search() (attempt {attempt + 1}/{max_retries})...")
 
-                activities = await marketActivity(
-                    activityType="listing",
+                if attempt > 0:
+                    wait_time = 5 * attempt
+                    logger.info(f"Waiting {wait_time}s before retry...")
+                    await asyncio.sleep(wait_time)
+
+                nfts = await search(
                     sort="latest",
-                    limit=20,
+                    limit=50,
                     authData=self.auth_data
                 )
 
-                if not activities:
-                    logger.warning("No activities returned from API")
-                    return []
+                logger.info(f"Received {len(nfts)} NFTs from API")
 
-                logger.info(f"Received {len(activities)} new listings")
+                gifts = []
+                for nft in nfts:
+                    logger.info(f"NFT ID: {nft.id}, TG_ID: {nft.tg_id}")
 
-                new_gifts = []
-                for activity in activities:
-                    try:
-                        gift_data = activity.get('gift', {})
-                        gift_id = gift_data.get('id')
-
-                        if not gift_id or gift_id in self.processed_ids:
-                            continue
-
-                        gift = Gift.from_api(gift_data)
-
-                        logger.info(
-                            f"NFT ID: {gift.id}, TG_ID: {gift.tg_id}, "
-                            f"Price: {gift.price}, Listed: {activity.get('created_at')}"
-                        )
-
-                        new_gifts.append(gift)
-                        self.processed_ids.add(gift_id)
-
-                    except Exception as e:
-                        logger.error(f"Error parsing gift: {e}")
+                    if nft.price > config.MAX_PRICE_TON:
                         continue
 
-                logger.info(f"Found {len(new_gifts)} NEW listings")
-                return new_gifts
+                    if nft.id in self.processed_ids:
+                        continue
+
+                    self.processed_ids.add(nft.id)
+
+                    attributes = []
+                    if nft.model:
+                        attributes.append({'type': 'model', 'value': nft.model})
+                    if nft.backdrop:
+                        attributes.append({'type': 'backdrop', 'value': nft.backdrop})
+                    if nft.symbol:
+                        attributes.append({'type': 'symbol', 'value': nft.symbol})
+
+                    # ✅ ИСПРАВЛЕНО: используем параметры из СТАРОГО database.py
+                    gift = Gift(
+                        id=nft.id,
+                        name=nft.name,
+                        number=nft.tg_id,  # ← ОБЯЗАТЕЛЬНЫЙ параметр!
+                        price=float(nft.price),
+                        collection_id=nft.collection_id,
+                        photo_url=nft.photo_url,
+                        attributes=attributes
+                        # timestamp создаётся автоматически в __post_init__
+                    )
+
+                    gifts.append(gift)
+
+                logger.info(f"Found {len(gifts)} new NFTs")
+                return gifts
 
             except Exception as e:
-                logger.error(f"Error scanning listings (attempt {attempt}): {e}")
-                if attempt < max_retries:
-                    await asyncio.sleep(2 ** attempt)
-                else:
+                logger.error(f"Error scanning gifts (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+                    logger.error("All retry attempts failed! Returning empty list.")
                     return []
 
         return []
 
-    async def get_model_floor(self, model: str) -> Optional[float]:
-        """
-        Get floor price for specific model.
-
-        Args:
-            model: NFT model name
-
-        Returns:
-            float: Floor price in TON, or None if not found
-        """
-        if not model:
-            return None
-
-        cache_key = f"floor_{model}"
-        if cache_key in self.floor_cache:
-            cached_time, cached_price = self.floor_cache[cache_key]
-            if (datetime.now() - cached_time).seconds < self.cache_ttl:
-                return cached_price
-
+    async def get_model_floor(self, collection_name: str, model: str) -> Optional[float]:
+        """Получить floor цену модели"""
         try:
-            logger.info(f"Getting floor for model: {model}")
-
-            floors = await filterFloors(
-                filters={'model': [model]},
+            nfts = await search(
+                gift_name=collection_name,
+                model=model,
+                sort="price_asc",
+                limit=1,
                 authData=self.auth_data
             )
 
-            if floors:
-                floor_price = float(floors[0].get('price', 0))
-                logger.info(f"Model floor for {model}: {floor_price} TON")
-
-                self.floor_cache[cache_key] = (datetime.now(), floor_price)
-                return floor_price
+            if nfts and len(nfts) > 0:
+                floor = float(nfts[0].price)
+                logger.info(f"Model floor for {model}: {floor} TON")
+                return floor
 
             return None
 
@@ -184,126 +142,94 @@ class PortalsMonitor:
             logger.error(f"Error getting model floor: {e}")
             return None
 
-    async def search_similar_nfts(
-            self,
-            model: str = None,
-            backdrop: str = None
-    ) -> List[Dict]:
-        """
-        Search for similar NFTs on marketplace.
+    async def search_similar_nfts(self, model: str = None, backdrop: str = None) -> List[Dict]:
+        """Поиск похожих NFT с retry"""
+        max_retries = 3
 
-        Args:
-            model: Model filter (required)
-            backdrop: Backdrop filter (optional)
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    await asyncio.sleep(3)
 
-        Returns:
-            List of NFT dictionaries
-        """
-        if not model:
-            return []
-
-        try:
-            if backdrop:
-                logger.info(f"Searching: {model} + {backdrop}")
-            else:
-                logger.info(f"Searching: {model} (MODEL ONLY)")
-
-            filters = {'model': [model]}
-            if backdrop:
-                filters['backdrop'] = [backdrop]
-
-            results = await search(
-                filters=filters,
-                sort='price',
-                limit=50,
-                authData=self.auth_data
-            )
-
-            if results:
-                logger.info(f"Found {len(results)} NFTs")
-                for i, nft in enumerate(results[:3], 1):
-                    attrs = nft.get('attributes', [])
-                    nft_model = next(
-                        (a['value'] for a in attrs if a.get('type') == 'model'),
-                        'Unknown'
+                if model and backdrop:
+                    logger.info(f"Searching: {model} + {backdrop}")
+                    nfts = await search(
+                        model=model,
+                        backdrop=backdrop,
+                        sort="price_asc",
+                        limit=50,
+                        authData=self.auth_data
                     )
-                    nft_backdrop = next(
-                        (a['value'] for a in attrs if a.get('type') == 'backdrop'),
-                        'Unknown'
+                elif model:
+                    logger.info(f"Searching: {model} (MODEL ONLY)")
+                    nfts = await search(
+                        model=model,
+                        sort="price_asc",
+                        limit=50,
+                        authData=self.auth_data
                     )
-                    logger.info(
-                        f"   NFT #{i}: {nft.get('name')}, "
-                        f"Model={nft_model}, Backdrop={nft_backdrop}, "
-                        f"Price={nft.get('price')}"
-                    )
+                else:
+                    logger.warning("No model specified")
+                    return []
 
-            return results
+                logger.info(f"Found {len(nfts)} NFTs")
 
-        except Exception as e:
-            logger.error(f"Search error: {e}")
-            return []
+                if len(nfts) > 0:
+                    for i, nft in enumerate(nfts[:3]):
+                        logger.info(
+                            f"  NFT #{i + 1}: {nft.name}, Model={nft.model}, Backdrop={nft.backdrop}, Price={nft.price}")
+
+                return [self._nft_to_dict(nft) for nft in nfts]
+
+            except Exception as e:
+                logger.error(f"Error searching NFTs (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+                    return []
+
+        return []
 
     async def get_sales_history(
             self,
-            gift_name: str,
+            collection_name: str,
             model: str = None,
             backdrop: str = None,
             days: int = 30
     ) -> List[Dict]:
-        """
-        Get sales history for similar NFTs.
-
-        Args:
-            gift_name: NFT name
-            model: Model filter
-            backdrop: Backdrop filter
-            days: Number of days to look back
-
-        Returns:
-            List of sale dictionaries
-        """
+        """Получить историю продаж"""
         try:
-            filters = {}
-            if model:
-                filters['model'] = [model]
-            if backdrop:
-                filters['backdrop'] = [backdrop]
-
             activities = await marketActivity(
-                activityType="sale",
-                filters=filters,
+                gift_name=collection_name,
+                model=model if model else None,
+                backdrop=backdrop if backdrop else None,
+                activityType="buy",
                 sort="latest",
-                limit=50,
+                limit=100,
                 authData=self.auth_data
             )
 
-            if not activities:
-                return []
-
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
-
             sales = []
+
             for activity in activities:
                 try:
-                    sale_date_str = activity.get('created_at')
-                    if not sale_date_str:
-                        continue
+                    timestamp = activity.created_at.replace('Z', '+00:00')
 
-                    sale_date = datetime.fromisoformat(
-                        sale_date_str.replace('Z', '+00:00')
-                    )
+                    if '.' in timestamp and '+' in timestamp:
+                        parts = timestamp.split('.')
+                        microseconds = parts[1].split('+')[0]
+                        if len(microseconds) > 6:
+                            microseconds = microseconds[:6]
+                        timestamp = f"{parts[0]}.{microseconds}+00:00"
 
-                    if sale_date < cutoff_date:
-                        continue
+                    sale_date = datetime.fromisoformat(timestamp)
 
-                    gift = activity.get('gift', {})
-                    price = float(gift.get('price', 0))
-
-                    if price > 0:
+                    if sale_date >= cutoff_date:
                         sales.append({
-                            'price': price,
+                            'price': float(activity.amount),
                             'date': sale_date,
-                            'name': gift.get('name')
+                            'nft_name': activity.nft.name,
+                            'model': activity.nft.model,
+                            'backdrop': activity.nft.backdrop
                         })
 
                 except Exception as e:
@@ -314,5 +240,20 @@ class PortalsMonitor:
             return sales
 
         except Exception as e:
-            logger.error(f"Error getting sales history: {e}")
+            logger.error(f"Error getting sales history: {e}", exc_info=True)
             return []
+
+    def _nft_to_dict(self, nft) -> Dict:
+        """Конвертация NFT в словарь"""
+        return {
+            'id': nft.id,
+            'tg_id': nft.tg_id,
+            'name': nft.name,
+            'price': float(nft.price),
+            'model': nft.model,
+            'backdrop': nft.backdrop,
+            'symbol': nft.symbol,
+            'photo_url': nft.photo_url,
+            'collection_id': nft.collection_id,
+            'floor_price': float(nft.floor_price) if nft.floor_price else None
+        }
