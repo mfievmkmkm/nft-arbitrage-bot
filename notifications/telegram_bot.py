@@ -1,23 +1,13 @@
-"""
-Telegram bot notifier.
-
-Sends formatted profit opportunity alerts with interactive buttons
-to Telegram chat.
-"""
-
 import asyncio
 import logging
 from typing import List, Dict
 from datetime import datetime, timezone
-
 from aiogram import Bot, Dispatcher, Router
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-
 from database import Gift, ProfitAnalysis
 import config
 
 logger = logging.getLogger(__name__)
-
 
 class TelegramNotifier:
     """Telegram notification manager."""
@@ -29,96 +19,78 @@ class TelegramNotifier:
         self.dp = Dispatcher()
         self.router = Router()
 
+        # Register handlers
         self.router.callback_query.register(
-            self.handle_copy_id,
-            lambda c: c.data and c.data.startswith("copy_id:")
+            self.handle_copy_id, lambda c: c.data and c.data.startswith("copy_id")
         )
-
         self.router.callback_query.register(
-            self.handle_info,
-            lambda c: c.data and c.data.startswith("info:")
+            self.handle_copy_id, lambda c: c.data and c.data.startswith("copy_mint")
         )
-
         self.dp.include_router(self.router)
 
     async def send_opportunity_alert(
-            self,
-            gift: Gift,
-            analysis: ProfitAnalysis,
-            ton_usd: float,
-            sales_history: List[Dict] = None
+        self,
+        gift: Gift,
+        analysis: ProfitAnalysis,
+        ton_usd: float,
+        sales_history: List[Dict] = None
     ) -> bool:
-        """
-        Send profit opportunity notification to Telegram.
-
-        Args:
-            gift: NFT Gift instance
-            analysis: Profit analysis result
-            ton_usd: Current TON/USD exchange rate
-            sales_history: Optional sales history data
-
-        Returns:
-            bool: True if sent successfully
-        """
+        """Send profit opportunity notification."""
         try:
+            # Extract attributes
             model, backdrop, symbol = None, None, None
             for attr in gift.attributes:
-                if attr.get('type') == 'model':
+                attr_type = attr.get('type')
+                if attr_type == 'model':
                     model = attr.get('value')
-                elif attr.get('type') == 'backdrop':
+                elif attr_type == 'backdrop':
                     backdrop = attr.get('value')
-                elif attr.get('type') == 'symbol':
+                elif attr_type == 'symbol':
                     symbol = attr.get('value')
 
+            # Calculate USD values
+            buy_usd = gift.price * ton_usd
+            target_usd = analysis.target_price * ton_usd
             profit_usd = analysis.profit_ton * ton_usd
-            buy_price_usd = gift.price * ton_usd
-            target_price_usd = analysis.target_price * ton_usd
 
-            sales_text = ""
-            if sales_history and len(sales_history) > 0:
-                recent = sales_history[:5]
-                sales_text = "\n\n📊 Recent sales (last 30 days):\n"
-                for sale in recent:
-                    sale_date = sale['date']
-                    if isinstance(sale_date, str):
-                        sale_date = datetime.fromisoformat(
-                            sale_date.replace('Z', '+00:00')
-                        )
+            # Sales history info
+            sales_info = ""
+            if sales_history:
+                avg_price = sum(s['price'] for s in sales_history) / len(sales_history)
+                recent_count = len([s for s in sales_history
+                                  if (datetime.now(timezone.utc) - s['date']).days <= 14])
+                sales_info = f"\n📊 Sales: {len(sales_history)} total, {recent_count} recent (avg: {avg_price:.2f} TON)"
 
-                    days_ago = (datetime.now(timezone.utc) - sale_date).days
-                    sales_text += f"• {sale['price']:.2f} TON ({days_ago}d ago)\n"
+            # Premium/monochrome indicator
+            special_type = ""
+            if "Premium" in analysis.strategy:
+                special_type = "✨ Premium"
+            elif "Monochrome" in analysis.strategy:
+                special_type = "🎨 Monochrome"
 
             message = f"""
-🔥 <b>PROFIT OPPORTUNITY</b> 🔥
+<b>🎯 PROFIT OPPORTUNITY</b>
 
-<b>{gift.name}</b>
-📦 Collection: {gift.collection}
+<b>📦 {gift.name}</b>
+{special_type} {model} + {backdrop}
 
-💎 <b>Attributes:</b>
-• Model: {model}
-• Backdrop: {backdrop}
-• Symbol: {symbol}
+💰 <b>Price:</b> {gift.price:.2f} TON (${buy_usd:.2f})
+🎯 <b>Target:</b> {analysis.target_price:.2f} TON (${target_usd:.2f})
+💎 <b>Net Profit:</b> {analysis.profit_ton:.2f} TON (${profit_usd:.2f})
+📈 <b>ROI:</b> {analysis.profit_percent:.1f}%
+🔥 <b>Strategy:</b> {analysis.strategy}
+⭐ <b>Confidence:</b> {analysis.confidence:.0%}{sales_info}
 
-💰 <b>Pricing:</b>
-• Buy: {gift.price} TON (${buy_price_usd:.2f})
-• Sell: {analysis.target_price:.1f} TON (${target_price_usd:.2f})
-• Net Profit: {analysis.profit_ton:.2f} TON (${profit_usd:.2f})
-
-📈 <b>ROI: {analysis.profit_percent:.1f}%</b>
-
-🎯 Strategy: {analysis.strategy}
-📊 Confidence: {analysis.confidence:.0%}
-{sales_text}
-🆔 Gift ID: <code>{gift.id}</code>
+<b>ID:</b> <code>{gift.id}</code>
 """
 
-            nft_url = f"https://getgems.io/collection/EQAtXZPpnoTbUV1vVW2vxqL9XmxPgz3ACSJPHobgCW1J7t2T/{gift.tg_id}"
+            nft_url = f"https://t.me/portals/market?startapp=gift_{gift.id}_gkal9v"
 
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔗 Open on GetGems", url=nft_url)],
+                [InlineKeyboardButton(text="🔗 Open on Portals", url=nft_url)],
                 [InlineKeyboardButton(
-                    text="📋 Copy ID",
-                    callback_data=f"copy_id:{gift.id}"
+                    text="📋 Copy Mint #",
+                    callback_data=f"copy_mint:{gift.tg_id}"
                 )]
             ])
 
@@ -136,13 +108,12 @@ class TelegramNotifier:
             return False
 
     async def handle_copy_id(self, callback: CallbackQuery):
-        """Handle copy ID button callback."""
         try:
-            gift_id = callback.data.split(":")[1]
-            await callback.answer(f"ID copied: {gift_id}", show_alert=True)
+            mint_number = callback.data.split(":")[1]
+            await callback.answer(f"Mint #{mint_number}", show_alert=True)
         except Exception as e:
-            logger.error(f"Error handling copy callback: {e}")
-            await callback.answer("Error copying ID", show_alert=True)
+            logger.error(f"Error: {e}")
+            await callback.answer("Error copying mint number", show_alert=True)
 
     async def handle_info(self, callback: CallbackQuery):
         """Handle info button callback."""

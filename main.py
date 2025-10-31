@@ -1,7 +1,7 @@
 """
 NFT Gift Bot - Main entry point.
-Automated NFT arbitrage trading bot for Telegram Gifts marketplace.
 
+Automated NFT arbitrage trading bot for Telegram Gifts marketplace.
 This bot monitors new NFT listings, analyzes profit opportunities,
 and sends notifications via Telegram.
 """
@@ -61,10 +61,8 @@ class NFTGiftBot:
             int: Number of profit opportunities found
         """
         found_opportunities = 0
-
         try:
             new_gifts = await self.portals_monitor.scan_new_gifts()
-
             if not new_gifts:
                 return 0
 
@@ -72,60 +70,27 @@ class NFTGiftBot:
 
             for gift in new_gifts:
                 try:
-                    model, backdrop = None, None
-                    for attr in gift.attributes:
-                        if attr.get('type') == 'model':
-                            model = attr.get('value')
-                        elif attr.get('type') == 'backdrop':
-                            backdrop = attr.get('value')
-
                     logger.info(f"Analyzing {gift.name}")
 
+                    # MAIN ANALYSIS - This does everything!
                     analysis = await self.analyzer.analyze_profit_opportunity(
                         gift,
                         portals_monitor=self.portals_monitor
                     )
 
                     if analysis:
-                        logger.info("Final check: validating opportunity")
+                        logger.info("💰 PROFITABLE OPPORTUNITY IDENTIFIED!")
 
-                        is_mono = self.analyzer.is_monochrome(model, backdrop)
-                        is_premium = self.analyzer.is_premium_backdrop(backdrop)
-                        search_backdrop = backdrop if (is_mono or is_premium) else None
-
-                        fresh_nfts = await self.portals_monitor.search_similar_nfts(
-                            model=model,
-                            backdrop=search_backdrop
-                        )
-
-                        if fresh_nfts:
-                            fresh_prices = [
-                                float(nft.get('price', 0))
-                                for nft in fresh_nfts
-                                if nft.get('price', 0) > 0
-                            ]
-                            if fresh_prices:
-                                fresh_min = min(fresh_prices)
-
-                                if gift.price > fresh_min * 1.02:
-                                    logger.warning(
-                                        f"Outdated opportunity: {gift.price} vs {fresh_min}"
-                                    )
-                                    continue
-
-                                logger.info(f"Confirmed cheapest: {gift.price} vs {fresh_min}")
-
-                        logger.info(f"Sending notification for {gift.name}")
-
+                        # Send notification immediately
                         try:
                             await self.send_notification(gift, analysis)
-                            logger.info("Notification sent successfully")
+                            logger.info("✅ Notification sent successfully")
                             self.stats['total_notifications'] += 1
                         except Exception as e:
-                            logger.error(f"Notification error: {e}", exc_info=True)
+                            logger.error(f"❌ Notification error: {e}", exc_info=True)
 
                         logger.info(
-                            f"Profit opportunity: {gift.name} | "
+                            f"🎯 Profit opportunity: {gift.name} | "
                             f"Buy: {gift.price} TON | "
                             f"Sell: {analysis.target_price:.1f} TON | "
                             f"Profit: {analysis.profit_percent:.1f}%"
@@ -134,7 +99,7 @@ class NFTGiftBot:
                         found_opportunities += 1
                         self.stats['total_found'] += 1
 
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1)  # Rate limiting
 
                 except Exception as e:
                     logger.error(f"Error analyzing {gift.name}: {e}", exc_info=True)
@@ -154,17 +119,26 @@ class NFTGiftBot:
             analysis: Profit analysis result
         """
         try:
-            model, backdrop = None, None
+            # Extract attributes for notification
+            model, backdrop, symbol = None, None, None
             for attr in gift.attributes:
-                if attr.get('type') == 'model':
+                attr_type = attr.get('type')
+                if attr_type == 'model':
                     model = attr.get('value')
-                elif attr.get('type') == 'backdrop':
+                elif attr_type == 'backdrop':
                     backdrop = attr.get('value')
+                elif attr_type == 'symbol':
+                    symbol = attr.get('value')
 
-            is_mono = self.portals_monitor.is_monochrome(model, backdrop)
-            is_premium = self.portals_monitor.is_premium_backdrop(backdrop)
-            search_backdrop = backdrop if (is_mono or is_premium) else None
+            # Get additional data for notification
+            is_premium = self.analyzer.is_premium_backdrop(backdrop)
+            is_monochrome = await self.analyzer.is_monochrome(model, backdrop, gift.name, gift.id)
 
+            # Determine if we need combo search for sales history
+            use_combo = is_premium or is_monochrome
+            search_backdrop = backdrop if use_combo else None
+
+            # Get sales history for notification
             sales_history = await self.portals_monitor.get_sales_history(
                 gift.name,
                 model=model,
@@ -172,8 +146,10 @@ class NFTGiftBot:
                 days=30
             )
 
+            # Get TON/USD rate
             ton_usd = await self.analyzer.get_ton_usd_price()
 
+            # Send the notification
             success = await self.notifier.send_opportunity_alert(
                 gift,
                 analysis,
@@ -182,23 +158,23 @@ class NFTGiftBot:
             )
 
             if success:
-                logger.info(f"Notification sent: {gift.name}")
+                logger.info(f"📱 Telegram notification sent: {gift.name}")
             else:
-                logger.error(f"Failed to send notification: {gift.name}")
+                logger.error(f"❌ Failed to send notification: {gift.name}")
 
         except Exception as e:
-            logger.error(f"Send notification error: {e}")
+            logger.error(f"Send notification error: {e}", exc_info=True)
 
     async def run(self):
         """Main bot loop."""
-        logger.info("NFT Gift Bot started")
+        logger.info("🚀 NFT Gift Bot started")
         logger.info(
-            f"Config: min_profit={config.MIN_PROFIT_PERCENT}%, "
+            f"⚙️ Config: min_profit={config.MIN_PROFIT_PERCENT}%, "
             f"max_price={config.MAX_PRICE_TON} TON"
         )
 
+        # Start Telegram bot polling
         polling_task = asyncio.create_task(self.notifier.start_polling())
-
         cycle = 0
 
         try:
@@ -206,27 +182,26 @@ class NFTGiftBot:
                 try:
                     cycle += 1
                     logger.info(
-                        f"\nCycle #{cycle} | "
+                        f"\n🔄 Cycle #{cycle} | "
                         f"{datetime.now().strftime('%H:%M:%S')}"
                     )
-                    logger.info("Starting scan...")
 
-                    await self.scan_and_analyze()
+                    logger.info("🔍 Starting scan...")
+                    opportunities_found = await self.scan_and_analyze()
 
                     logger.info(
-                        f"Cycle #{cycle} complete: "
-                        f"Found {self.stats['total_found']} opportunities"
+                        f"✅ Cycle #{cycle} complete: "
+                        f"Found {opportunities_found} opportunities"
                     )
 
                     await asyncio.sleep(config.SCAN_INTERVAL_SECONDS)
 
                 except Exception as e:
-                    logger.error(f"Main loop error: {e}", exc_info=True)
-                    await asyncio.sleep(60)
+                    logger.error(f"❌ Main loop error: {e}", exc_info=True)
+                    await asyncio.sleep(60)  # Wait longer on error
 
         except KeyboardInterrupt:
-            logger.info("Received shutdown signal (Ctrl+C)")
-
+            logger.info("⛔ Received shutdown signal (Ctrl+C)")
         finally:
             await self.shutdown(polling_task)
 
@@ -237,22 +212,24 @@ class NFTGiftBot:
         Args:
             polling_task: Asyncio task for Telegram polling
         """
-        logger.info("Shutting down gracefully...")
+        logger.info("🔄 Shutting down gracefully...")
 
+        # Cancel polling task
         polling_task.cancel()
         try:
             await polling_task
         except asyncio.CancelledError:
             pass
-        logger.info("Telegram polling stopped")
+        logger.info("⛔ Telegram polling stopped")
 
+        # Close bot session
         try:
             await self.notifier.bot.session.close()
-            logger.info("Telegram bot session closed")
+            logger.info("🔒 Telegram bot session closed")
         except Exception as e:
-            logger.warning(f"Error closing bot session: {e}")
+            logger.warning(f"⚠️ Error closing bot session: {e}")
 
-        logger.info("Bot stopped successfully")
+        logger.info("✅ Bot stopped successfully")
 
 
 async def main():
@@ -265,4 +242,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
+        logger.info("⛔ Bot stopped by user")

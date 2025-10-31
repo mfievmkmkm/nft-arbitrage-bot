@@ -53,3 +53,7 @@ htmlcov/
 *.tmp
 *.bak
 *~
+"main.spec" 
+"start_bot.bat" 
+"*.spec" 
+"*.bat" 

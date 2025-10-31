@@ -7,6 +7,7 @@ from dataclasses import dataclass, asdict
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class Gift:
     id: str
@@ -26,15 +27,23 @@ class Gift:
         if not self.url:
             self.url = f"https://portal-market.com/nft/{self.id}"
 
+    @property
+    def tg_id(self):
+        """Compatibility property for Telegram ID"""
+        return self.number
+
+
 @dataclass
 class ProfitAnalysis:
     gift_id: str
     profit_percent: float
+    profit_ton: float  # ДОБАВИТЬ ЭТО ПОЛЕ!
     risk_score: float
     confidence: float
     strategy: str
     reasoning: str
     target_price: float
+
 
 class Database:
     def __init__(self, db_path: str):
