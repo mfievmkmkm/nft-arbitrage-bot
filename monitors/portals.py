@@ -1,10 +1,12 @@
-import logging
-from typing import List, Optional, Dict
-from datetime import datetime, timezone, timedelta
-from database import Gift
-import config
-from aportalsmp.gifts import search, marketActivity, filterFloors
 import asyncio
+import logging
+from datetime import datetime, timezone, timedelta
+from typing import List, Optional, Dict
+
+from aportalsmp.gifts import search, marketActivity
+
+import config
+from database import Gift
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +25,14 @@ class PortalsMonitor:
         if not model or not backdrop:
             return False
 
-        color_groups = {
-            'red': ['red', 'crimson', 'scarlet', 'cherry', 'ruby', 'rose', 'burgundy'],
+        color_groups = {'red': ['red', 'crimson', 'scarlet', 'cherry', 'ruby', 'rose', 'burgundy'],
             'blue': ['blue', 'azure', 'navy', 'sapphire', 'cobalt', 'cyan', 'indigo'],
             'green': ['green', 'emerald', 'forest', 'jade', 'olive', 'lime'],
             'yellow': ['yellow', 'gold', 'golden', 'amber', 'lemon'],
             'purple': ['purple', 'violet', 'lavender', 'plum', 'amethyst'],
-            'pink': ['pink', 'rose', 'magenta', 'fuchsia'],
-            'brown': ['brown', 'chocolate', 'coffee', 'tan', 'beige'],
-            'gray': ['gray', 'grey', 'silver', 'steel', 'charcoal'],
-            'black': ['black', 'onyx', 'ebony', 'midnight'],
-            'white': ['white', 'ivory', 'pearl', 'snow']
-        }
+            'pink': ['pink', 'rose', 'magenta', 'fuchsia'], 'brown': ['brown', 'chocolate', 'coffee', 'tan', 'beige'],
+            'gray': ['gray', 'grey', 'silver', 'steel', 'charcoal'], 'black': ['black', 'onyx', 'ebony', 'midnight'],
+            'white': ['white', 'ivory', 'pearl', 'snow']}
 
         model_lower = model.lower()
         backdrop_lower = backdrop.lower()
@@ -67,11 +65,7 @@ class PortalsMonitor:
                     logger.info(f"Waiting {wait_time}s before retry...")
                     await asyncio.sleep(wait_time)
 
-                nfts = await search(
-                    sort="latest",
-                    limit=50,
-                    authData=self.auth_data
-                )
+                nfts = await search(sort="latest", limit=50, authData=self.auth_data)
 
                 logger.info(f"Received {len(nfts)} NFTs from API")
 
@@ -96,15 +90,9 @@ class PortalsMonitor:
                         attributes.append({'type': 'symbol', 'value': nft.symbol})
 
                     # ✅ ИСПРАВЛЕНО: используем параметры из СТАРОГО database.py
-                    gift = Gift(
-                        id=nft.id,
-                        name=nft.name,
-                        number=nft.tg_id,  # ← ОБЯЗАТЕЛЬНЫЙ параметр!
-                        price=float(nft.price),
-                        collection_id=nft.collection_id,
-                        photo_url=nft.photo_url,
-                        attributes=attributes
-                        # timestamp создаётся автоматически в __post_init__
+                    gift = Gift(id=nft.id, name=nft.name, number=nft.tg_id,  # ← ОБЯЗАТЕЛЬНЫЙ параметр!
+                        price=float(nft.price), collection_id=nft.collection_id, photo_url=nft.photo_url,
+                        attributes=attributes# timestamp создаётся автоматически в __post_init__
                     )
 
                     gifts.append(gift)
@@ -123,13 +111,8 @@ class PortalsMonitor:
     async def get_model_floor(self, collection_name: str, model: str) -> Optional[float]:
         """Получить floor цену модели"""
         try:
-            nfts = await search(
-                gift_name=collection_name,
-                model=model,
-                sort="price_asc",
-                limit=1,
-                authData=self.auth_data
-            )
+            nfts = await search(gift_name=collection_name, model=model, sort="price_asc", limit=1,
+                authData=self.auth_data)
 
             if nfts and len(nfts) > 0:
                 floor = float(nfts[0].price)
@@ -153,21 +136,11 @@ class PortalsMonitor:
 
                 if model and backdrop:
                     logger.info(f"Searching: {model} + {backdrop}")
-                    nfts = await search(
-                        model=model,
-                        backdrop=backdrop,
-                        sort="price_asc",
-                        limit=50,
-                        authData=self.auth_data
-                    )
+                    nfts = await search(model=model, backdrop=backdrop, sort="price_asc", limit=50,
+                        authData=self.auth_data)
                 elif model:
                     logger.info(f"Searching: {model} (MODEL ONLY)")
-                    nfts = await search(
-                        model=model,
-                        sort="price_asc",
-                        limit=50,
-                        authData=self.auth_data
-                    )
+                    nfts = await search(model=model, sort="price_asc", limit=50, authData=self.auth_data)
                 else:
                     logger.warning("No model specified")
                     return []
@@ -188,72 +161,90 @@ class PortalsMonitor:
 
         return []
 
-    async def get_sales_history(
-            self,
-            collection_name: str,
-            model: str = None,
-            backdrop: str = None,
-            days: int = 30
-    ) -> List[Dict]:
-        """Получить историю продаж"""
-        try:
-            activities = await marketActivity(
-                gift_name=collection_name,
-                model=model if model else None,
-                backdrop=backdrop if backdrop else None,
-                activityType="buy",
-                sort="latest",
-                limit=100,
-                authData=self.auth_data
-            )
+    async def get_sales_history(self, collection_name: str, model: str = None, backdrop: str = None, days: int = 30) -> \
+            List[Dict]:
+        """
+        Get sales history for specific collection/model/backdrop combination with retry logic
+        """
+        max_retries = 3
 
-            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
-            sales = []
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Getting sales history for {collection_name} (attempt {attempt + 1}/{max_retries})")
 
-            for activity in activities:
-                try:
-                    timestamp = activity.created_at.replace('Z', '+00:00')
+                # Add delay before retry attempts
+                if attempt > 0:
+                    wait_time = (2 ** attempt)  # Exponential backoff: 2s, 4s, 8s
+                    logger.info(f"Waiting {wait_time}s before retry...")
+                    await asyncio.sleep(wait_time)
 
-                    if '.' in timestamp and '+' in timestamp:
-                        parts = timestamp.split('.')
-                        microseconds = parts[1].split('+')[0]
-                        if len(microseconds) > 6:
-                            microseconds = microseconds[:6]
-                        timestamp = f"{parts[0]}.{microseconds}+00:00"
+                # Call Portals API
+                activities = await marketActivity(gift_name=collection_name, model=model if model else None,
+                    backdrop=backdrop if backdrop else None, activityType="buy", sort="latest", limit=100,
+                    authData=self.auth_data)
 
-                    sale_date = datetime.fromisoformat(timestamp)
+                # Filter by date range
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+                sales = []
 
-                    if sale_date >= cutoff_date:
-                        sales.append({
-                            'price': float(activity.amount),
-                            'date': sale_date,
-                            'nft_name': activity.nft.name,
-                            'model': activity.nft.model,
-                            'backdrop': activity.nft.backdrop
-                        })
+                for activity in activities:
+                    try:
+                        # Parse timestamp (handle different formats)
+                        timestamp = activity.created_at.replace('Z', '+00:00')
+                        if '.' in timestamp and '+' in timestamp:
+                            # Handle microseconds
+                            parts = timestamp.split('.')
+                            microseconds = parts[1].split('+')[0]
+                            if len(microseconds) > 6:
+                                microseconds = microseconds[:6]  # Truncate to 6 digits
+                            elif len(microseconds) < 6:
+                                microseconds = microseconds.ljust(6, '0')  # Pad with zeros
+                            timestamp = f"{parts[0]}.{microseconds}+00:00"
 
-                except Exception as e:
-                    logger.error(f"Error parsing sale: {e}")
-                    continue
+                        # Convert to datetime
+                        sale_date = datetime.fromisoformat(timestamp)
 
-            logger.info(f"Found {len(sales)} sales in last {days} days")
-            return sales
+                        # Only include sales within date range - ВНУТРИ try блока!
+                        if sale_date >= cutoff_date:
+                            sales.append({
+                                'price': float(activity.amount),
+                                'date': sale_date,
+                                'nft_name': activity.nft.name,
+                                'model': activity.nft.model,
+                                'backdrop': activity.nft.backdrop
+                            })
 
-        except Exception as e:
-            logger.error(f"Error getting sales history: {e}", exc_info=True)
-            return []
+                    except Exception as e:
+                        logger.error(f"Error parsing sale activity: {e}")
+                        continue
+
+                logger.info(f"Found {len(sales)} sales in last {days} days for {collection_name}")
+                return sales
+
+            except Exception as e:
+                error_msg = str(e)
+
+                # Log different error types
+                if "SSL" in error_msg or "TLS" in error_msg:
+                    logger.error(
+                        f"SSL/TLS error getting sales history (attempt {attempt + 1}/{max_retries}): {error_msg}")
+                elif "Connection" in error_msg or "timeout" in error_msg.lower():
+                    logger.error(
+                        f"Connection error getting sales history (attempt {attempt + 1}/{max_retries}): {error_msg}")
+                else:
+                    logger.error(f"API error getting sales history (attempt {attempt + 1}/{max_retries}): {error_msg}")
+
+                # If this was the last attempt, return empty list
+                if attempt == max_retries - 1:
+                    logger.error(
+                        f"All {max_retries} retry attempts failed for {collection_name}! Returning empty sales history.")
+                    return []
+
+        # Should never reach here, but just in case
+        return []
 
     def _nft_to_dict(self, nft) -> Dict:
         """Конвертация NFT в словарь"""
-        return {
-            'id': nft.id,
-            'tg_id': nft.tg_id,
-            'name': nft.name,
-            'price': float(nft.price),
-            'model': nft.model,
-            'backdrop': nft.backdrop,
-            'symbol': nft.symbol,
-            'photo_url': nft.photo_url,
-            'collection_id': nft.collection_id,
-            'floor_price': float(nft.floor_price) if nft.floor_price else None
-        }
+        return {'id': nft.id, 'tg_id': nft.tg_id, 'name': nft.name, 'price': float(nft.price), 'model': nft.model,
+            'backdrop': nft.backdrop, 'symbol': nft.symbol, 'photo_url': nft.photo_url,
+            'collection_id': nft.collection_id, 'floor_price': float(nft.floor_price) if nft.floor_price else None}

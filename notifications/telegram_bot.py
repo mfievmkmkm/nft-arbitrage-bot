@@ -1,13 +1,15 @@
-import asyncio
 import logging
-from typing import List, Dict
 from datetime import datetime, timezone
+from typing import List, Dict
+
 from aiogram import Bot, Dispatcher, Router
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from database import Gift, ProfitAnalysis
+
 import config
+from database import Gift, ProfitAnalysis
 
 logger = logging.getLogger(__name__)
+
 
 class TelegramNotifier:
     """Telegram notification manager."""
@@ -20,21 +22,12 @@ class TelegramNotifier:
         self.router = Router()
 
         # Register handlers
-        self.router.callback_query.register(
-            self.handle_copy_id, lambda c: c.data and c.data.startswith("copy_id")
-        )
-        self.router.callback_query.register(
-            self.handle_copy_id, lambda c: c.data and c.data.startswith("copy_mint")
-        )
+        self.router.callback_query.register(self.handle_copy_id, lambda c: c.data and c.data.startswith("copy_id"))
+        self.router.callback_query.register(self.handle_copy_id, lambda c: c.data and c.data.startswith("copy_mint"))
         self.dp.include_router(self.router)
 
-    async def send_opportunity_alert(
-        self,
-        gift: Gift,
-        analysis: ProfitAnalysis,
-        ton_usd: float,
-        sales_history: List[Dict] = None
-    ) -> bool:
+    async def send_opportunity_alert(self, gift: Gift, analysis: ProfitAnalysis, ton_usd: float,
+            sales_history: List[Dict] = None) -> bool:
         """Send profit opportunity notification."""
         try:
             # Extract attributes
@@ -57,8 +50,7 @@ class TelegramNotifier:
             sales_info = ""
             if sales_history:
                 avg_price = sum(s['price'] for s in sales_history) / len(sales_history)
-                recent_count = len([s for s in sales_history
-                                  if (datetime.now(timezone.utc) - s['date']).days <= 14])
+                recent_count = len([s for s in sales_history if (datetime.now(timezone.utc) - s['date']).days <= 14])
                 sales_info = f"\n📊 Sales: {len(sales_history)} total, {recent_count} recent (avg: {avg_price:.2f} TON)"
 
             # Premium/monochrome indicator
@@ -86,20 +78,11 @@ class TelegramNotifier:
 
             nft_url = f"https://t.me/portals/market?startapp=gift_{gift.id}_gkal9v"
 
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔗 Open on Portals", url=nft_url)],
-                [InlineKeyboardButton(
-                    text="📋 Copy Mint #",
-                    callback_data=f"copy_mint:{gift.tg_id}"
-                )]
-            ])
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[[InlineKeyboardButton(text="🔗 Open on Portals", url=nft_url)],
+                    [InlineKeyboardButton(text="📋 Copy Mint #", callback_data=f"copy_mint:{gift.tg_id}")]])
 
-            await self.bot.send_message(
-                chat_id=self.user_id,
-                text=message,
-                parse_mode="HTML",
-                reply_markup=keyboard
-            )
+            await self.bot.send_message(chat_id=self.user_id, text=message, parse_mode="HTML", reply_markup=keyboard)
 
             return True
 

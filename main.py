@@ -25,14 +25,8 @@ from analyzers.profit_analyzer import ProfitAnalyzer
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('nft_bot.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.FileHandler('nft_bot.log', encoding='utf-8'), logging.StreamHandler()])
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +40,8 @@ class NFTGiftBot:
         self.portals_monitor = PortalsMonitor()
         self.notifier = TelegramNotifier()
         self.analyzer = ProfitAnalyzer()
-        self.stats: Dict[str, Any] = {
-            'total_scanned': 0,
-            'total_found': 0,
-            'total_notifications': 0,
-            'start_time': datetime.now()
-        }
+        self.stats: Dict[str, Any] = {'total_scanned': 0, 'total_found': 0, 'total_notifications': 0,
+            'start_time': datetime.now()}
 
     async def scan_and_analyze(self) -> int:
         """
@@ -73,10 +63,8 @@ class NFTGiftBot:
                     logger.info(f"Analyzing {gift.name}")
 
                     # MAIN ANALYSIS - This does everything!
-                    analysis = await self.analyzer.analyze_profit_opportunity(
-                        gift,
-                        portals_monitor=self.portals_monitor
-                    )
+                    analysis = await self.analyzer.analyze_profit_opportunity(gift,
+                        portals_monitor=self.portals_monitor)
 
                     if analysis:
                         logger.info("💰 PROFITABLE OPPORTUNITY IDENTIFIED!")
@@ -89,12 +77,10 @@ class NFTGiftBot:
                         except Exception as e:
                             logger.error(f"❌ Notification error: {e}", exc_info=True)
 
-                        logger.info(
-                            f"🎯 Profit opportunity: {gift.name} | "
-                            f"Buy: {gift.price} TON | "
-                            f"Sell: {analysis.target_price:.1f} TON | "
-                            f"Profit: {analysis.profit_percent:.1f}%"
-                        )
+                        logger.info(f"🎯 Profit opportunity: {gift.name} | "
+                                    f"Buy: {gift.price} TON | "
+                                    f"Sell: {analysis.target_price:.1f} TON | "
+                                    f"Profit: {analysis.profit_percent:.1f}%")
 
                         found_opportunities += 1
                         self.stats['total_found'] += 1
@@ -139,23 +125,14 @@ class NFTGiftBot:
             search_backdrop = backdrop if use_combo else None
 
             # Get sales history for notification
-            sales_history = await self.portals_monitor.get_sales_history(
-                gift.name,
-                model=model,
-                backdrop=search_backdrop,
-                days=30
-            )
+            sales_history = await self.portals_monitor.get_sales_history(gift.name, model=model,
+                backdrop=search_backdrop, days=30)
 
             # Get TON/USD rate
             ton_usd = await self.analyzer.get_ton_usd_price()
 
             # Send the notification
-            success = await self.notifier.send_opportunity_alert(
-                gift,
-                analysis,
-                ton_usd,
-                sales_history
-            )
+            success = await self.notifier.send_opportunity_alert(gift, analysis, ton_usd, sales_history)
 
             if success:
                 logger.info(f"📱 Telegram notification sent: {gift.name}")
@@ -168,10 +145,8 @@ class NFTGiftBot:
     async def run(self):
         """Main bot loop."""
         logger.info("🚀 NFT Gift Bot started")
-        logger.info(
-            f"⚙️ Config: min_profit={config.MIN_PROFIT_PERCENT}%, "
-            f"max_price={config.MAX_PRICE_TON} TON"
-        )
+        logger.info(f"⚙️ Config: min_profit={config.MIN_PROFIT_PERCENT}%, "
+                    f"max_price={config.MAX_PRICE_TON} TON")
 
         # Start Telegram bot polling
         polling_task = asyncio.create_task(self.notifier.start_polling())
@@ -181,18 +156,14 @@ class NFTGiftBot:
             while True:
                 try:
                     cycle += 1
-                    logger.info(
-                        f"\n🔄 Cycle #{cycle} | "
-                        f"{datetime.now().strftime('%H:%M:%S')}"
-                    )
+                    logger.info(f"\n🔄 Cycle #{cycle} | "
+                                f"{datetime.now().strftime('%H:%M:%S')}")
 
                     logger.info("🔍 Starting scan...")
                     opportunities_found = await self.scan_and_analyze()
 
-                    logger.info(
-                        f"✅ Cycle #{cycle} complete: "
-                        f"Found {opportunities_found} opportunities"
-                    )
+                    logger.info(f"✅ Cycle #{cycle} complete: "
+                                f"Found {opportunities_found} opportunities")
 
                     await asyncio.sleep(config.SCAN_INTERVAL_SECONDS)
 

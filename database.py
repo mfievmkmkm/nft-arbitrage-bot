@@ -1,9 +1,9 @@
-import sqlite3
 import json
 import logging
+import sqlite3
+from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Dict, Optional
-from dataclasses import dataclass, asdict
+from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -106,18 +106,8 @@ class Database:
                     INSERT OR REPLACE INTO gifts 
                     (id, name, number, price, collection_id, photo_url, attributes, platform, url, timestamp)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    gift.id,
-                    gift.name,
-                    gift.number,
-                    gift.price,
-                    gift.collection_id,
-                    gift.photo_url,
-                    json.dumps(gift.attributes),
-                    gift.platform,
-                    gift.url,
-                    gift.timestamp
-                ))
+                ''', (gift.id, gift.name, gift.number, gift.price, gift.collection_id, gift.photo_url,
+                      json.dumps(gift.attributes), gift.platform, gift.url, gift.timestamp))
                 conn.commit()
                 return True
         except Exception as e:
@@ -133,15 +123,8 @@ class Database:
                     INSERT OR REPLACE INTO profit_analysis
                     (gift_id, profit_percent, risk_score, confidence, strategy, reasoning, target_price)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    analysis.gift_id,
-                    analysis.profit_percent,
-                    analysis.risk_score,
-                    analysis.confidence,
-                    analysis.strategy,
-                    analysis.reasoning,
-                    analysis.target_price
-                ))
+                ''', (analysis.gift_id, analysis.profit_percent, analysis.risk_score, analysis.confidence,
+                      analysis.strategy, analysis.reasoning, analysis.target_price))
                 conn.commit()
                 return True
         except Exception as e:
@@ -175,16 +158,8 @@ class Database:
 
             gifts = []
             for row in cursor.fetchall():
-                gifts.append(Gift(
-                    id=row[0],
-                    name=row[1],
-                    number=row[2],
-                    price=row[3],
-                    collection_id=row[4],
-                    photo_url=row[5],
-                    attributes=json.loads(row[6]) if row[6] else [],
-                    platform=row[7],
-                    url=row[8],
-                    timestamp=datetime.fromisoformat(row[9]) if row[9] else None
-                ))
+                gifts.append(
+                    Gift(id=row[0], name=row[1], number=row[2], price=row[3], collection_id=row[4], photo_url=row[5],
+                        attributes=json.loads(row[6]) if row[6] else [], platform=row[7], url=row[8],
+                        timestamp=datetime.fromisoformat(row[9]) if row[9] else None))
             return gifts
