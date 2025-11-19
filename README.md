@@ -291,30 +291,30 @@ ID: 2dd43a95-7682-4bab-b3cd-3e2b107a8436
 
 ## 🛠️ Project Structure
 
+```text
 nft-arbitrage-bot/
 │
-├── main.py # Bot entry point
-├── database.py # SQLite persistence layer
-├── config.example.py # Configuration template
-├── requirements.txt # Python dependencies
-├── README.md # This file
-├── .gitignore # Git exclusions
+├── main.py                 # Bot entry point
+├── database.py             # SQLite persistence layer
+├── config.example.py       # Configuration template
+├── requirements.txt        # Python dependencies
+├── README.md               # This file
+├── .gitignore              # Git exclusions
 │
 ├── analyzers/
-│ ├── init.py
-│ └── profit_analyzer.py # Multi-strategy profit detection
+│   ├── __init__.py
+│   └── profit_analyzer.py  # Multi-strategy profit detection
 │
 ├── monitors/
-│ ├── init.py
-│ └── portals.py # Portals marketplace integration
+│   ├── __init__.py
+│   └── portals.py          # Portals marketplace integration
 │
 ├── notifications/
-│ ├── init.py
-│ └── telegram_bot.py # Telegram notification manager
+│   ├── __init__.py
+│   └── telegram_bot.py     # Telegram notification manager
 │
-└── aportalsmp/ # Portals API library (install separately)
-
-
+└── aportalsmp/             # Portals API library (install separately)
+```
 ---
 
 ## 🧪 Testing
