@@ -345,5 +345,5 @@ test_*.py
 start_bot.bat
 *.bat
 
-# Local development folder 
+# Local development folder
 aportalsmp/
