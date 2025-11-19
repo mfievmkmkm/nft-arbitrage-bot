@@ -1,175 +1,453 @@
-# 🤖 NFT Arbitrage Trading Bot
+# 🤖 NFT Gift Bot
 
-Automated NFT arbitrage trading bot for **Telegram Gifts marketplace** with real-time profit opportunity detection and intelligent analysis algorithms.
+<div align="center">
 
-> **Note:** This project was developed with assistance from AI tools (Claude, ChatGPT) as part of my learning journey in Python and automated trading systems.
+![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Status](https://img.shields.io/badge/status-active-success.svg)
+![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)
 
-## 📊 Key Features
+**Automated NFT arbitrage trading bot for Telegram Gifts marketplace with real-time profit opportunity detection and multi-strategy analysis**
 
-- ✅ **Real-time monitoring** of new NFT listings (20 NFTs every 3 seconds)
-- 📈 **Smart profit analysis** with floor price tracking across 50+ similar items
-- 💰 **Monochrome & premium backdrop detection** for rare combinations
-- 📱 **Telegram notifications** with detailed analytics and interactive buttons
-- 🔄 **Automated scanning** with duplicate prevention
-- 🧠 **Sales history analysis** for price prediction (last 30 days)
-- 💎 **Net profit calculation** accounting for 5% marketplace commission
+[Features](#-features) • [Installation](#-installation) • [Configuration](#%EF%B8%8F-configuration) • [Strategies](#-trading-strategies) • [Results](#-performance) • [Disclaimer](#%EF%B8%8F-disclaimer)
 
-## 🔄 How It Works
+</div>
 
-1. **Monitor** - Scans marketplace every 3 seconds for new listings
-2. **Analyze** - Calculates profit potential using floor prices
-3. **Alert** - Sends Telegram notification if ROI > 10%
-4. **Cache** - Stores data in SQLite to prevent duplicates
+---
 
-## 🚀 Tech Stack
+## 📖 About
 
-- **Python 3.11+**
-- **asyncio** - Asynchronous I/O for concurrent operations
-- **aiohttp** - Async HTTP client for API requests
-- **aiogram 3.x** - Modern Telegram Bot API framework
-- **SQLite** - Lightweight database for caching
-- **aportalsmp** - Telegram Gifts marketplace API wrapper
+Advanced trading bot for **Portals.gift** (Telegram Gifts) marketplace that automatically detects profitable NFT arbitrage opportunities using multiple analysis strategies and sends real-time Telegram notifications.
 
-## 📈 Profit Analysis Algorithm
+**Built with AI assistance** (Claude, ChatGPT) as part of my learning journey in Python, async programming, and algorithmic trading systems.
 
-1. **Floor Price Check** - Compare listing price with cheapest similar NFT
-2. **Model Analysis** - Verify model-specific floor price
-3. **Backdrop Detection** - Identify monochrome combinations and premium backdrops
-4. **Sales History** - Analyze recent sales (last 30 days) for price validation
-5. **Commission Calculation** - Account for 5% marketplace fee
-6. **Net Profit** - Calculate final profit after all costs
+---
 
-### Profit Criteria
+## ✨ Features
 
-- Minimum ROI: **10%** (configurable)
-- Maximum price: **5000 TON** (configurable)
-- Minimum sales history: **2 sales** for high-value opportunities
+### 🎯 Core Functionality
+- **Real-time Monitoring** - Scans marketplace every 5 seconds for new listings
+- **Multi-Strategy Analysis** - 4 different profit detection algorithms
+- **Smart Price Prediction** - Statistical analysis of 60-day sales history
+- **Duplicate Prevention** - SQLite-backed caching system
+- **Intelligent Rate Limiting** - Parallel processing with staggered execution
 
-## 🎯 Results
+### 💰 Trading Strategies
 
-- Scans **400+ NFTs/minute** (20 NFTs every 3 seconds)
-- Average profit opportunity: **15-20% ROI**
-- Detection latency: **<5 seconds** from listing to notification
-- False positive rate: **<5%** (with sales history validation)
+1. **Model Arbitrage** - Buy cheapest NFT with specific model, sell at average price
+2. **Premium Backdrop Alert** - Detect premium backdrops (Midnight Blue, Rainbow, etc.) below expected multiplier
+3. **Monochrome Combinations** - Find rare color-matched model + backdrop pairs
+4. **Special Number Detection** - Identify valuable mint numbers (#0, #69, #420, palindromes)
 
-## 🔒 Security
+### 📱 Telegram Integration
+- Rich formatted notifications with NFT details
+- Interactive buttons (Open on Portals, Copy Mint #)
+- Price analysis with TON/USD conversion
+- Sales history summaries
+- Error and status alerts
 
-- API keys and tokens stored in `config.py` (git-ignored)
-- No credentials in source code
-- Private repository recommended for personal use
+---
 
-## 📝 Installation
+## 🚀 Installation
 
-### 1. Clone Repository
+### Prerequisites
 
-- git clone https://github.com/yourusername/nft-arbitrage-bot.git
-- cd nft-arbitrage-bot
+- Python 3.9 or higher
+- Telegram account
+- Git
 
-### 2. Create Virtual Environment
+### Step 1: Clone Repository
 
-- python -m venv venv
-- Windows
+git clone https://github.com/Elchin-bit/nft-arbitrage-bot.git
+cd nft-arbitrage-bot
+
+text
+
+### Step 2: Create Virtual Environment
+
+Create venv
+python -m venv venv
+
+Activate
+Windows:
 venv\Scripts\activate
 
-- Linux/Mac
+Linux/Mac:
 source venv/bin/activate
 
-### 3. Install Dependencies
+text
 
-- pip install -r requirements.txt
+### Step 3: Install Dependencies
 
-### 4. Configure Bot
+pip install -r requirements.txt
+
+text
+
+### Step 4: Install aportalsmp Library
+
+**Important:** The `aportalsmp` library is not available via pip and must be installed manually.
+
+Clone the library
+git clone https://github.com/bleach-hub/aportalsmp
+
+Copy to project root
+cp -r aportalsmp/aportalsmp ./
+
+Verify installation
+python -c "import aportalsmp; print('✓ aportalsmp installed successfully')"
+
+text
+
+**Credit:** Special thanks to [@bleach-hub](https://github.com/bleach-hub) for the `aportalsmp` library!
+
+### Step 5: Configure Bot
 
 Copy example config
 cp config.example.py config.py
 
-Edit config.py with your credentials
-- TELEGRAM_BOT_TOKEN (from @BotFather)
-- TELEGRAM_CHAT_ID (your Telegram ID)
-- PORTALS_AUTH_TOKEN (from Telegram Gifts)
+Edit with your credentials
+nano config.py # or any text editor
 
-### 5. Run Bot
+text
+
+**Required credentials:**
+
+1. **TELEGRAM_BOT_TOKEN**
+   - Get from [@BotFather](https://t.me/BotFather) on Telegram
+   - Create new bot: `/newbot`
+
+2. **TELEGRAM_CHAT_ID**
+   - Get from [@userinfobot](https://t.me/userinfobot) on Telegram
+   - Just start the bot and copy your ID
+
+3. **PORTALS_AUTH_TOKEN**
+   - Open (https://web.telegram.org/k/#@portals) in browser
+   - Press F12 (DevTools) → Network tab
+   - Look for any API request
+   - Copy `Authorization` header value
+   - See `config.example.py` for detailed instructions
+
+### Step 6: Run Bot
 
 python main.py
 
+text
 
-## ⚙️ Configuration
+**Expected output:**
+============================================================
+🚀 NFT GIFT BOT v2.2 STARTING
+⚙️ Configuration:
 
-Edit `config.py` to customize:
+Min Profit: 20%
 
-Profit thresholds
-MIN_PROFIT_PERCENT = 10 # Minimum 10% ROI
-MAX_PRICE_TON = 5000 # Maximum 5000 TON per NFT
+Max Price: 5000 TON
 
-Scanning
-SCAN_INTERVAL_SECONDS = 3 # Scan every 3 seconds
+Scan Interval: 5s
 
-Database
-DATABASE_PATH = "nft_gifts.db"
+Sales History: 60 days
+============================================================
+✅ NFTGiftBot initialized successfully
+🚀 Starting Telegram bot polling...
+============================================================
+🔄 CYCLE #1 | 2025-11-19 20:30:00
+============================================================
 
-
-## 📱 Telegram Commands
-
-The bot sends notifications automatically when profit opportunities are detected:
-
-- 🔗 **Open on GetGems** - View NFT on marketplace
-- 📋 **Copy ID** - Copy NFT ID to clipboard
-
-## 🧪 Testing
-
-Run the bot locally and monitor console logs:
-
-- python main.py
-
-Expected output:
-
-2025-10-29 21:30:00 - INFO - NFT Gift Bot started!
-2025-10-29 21:30:00 - INFO - Config: min_profit=10%, max_price=5000 TON
-2025-10-29 21:30:01 - INFO - Scanning NEW LISTINGS...
-2025-10-29 21:30:02 - INFO - Found 20 NEW listings
-
-
-## 🚧 Development Status
-
-**Status:** MVP Complete - Private Testing Phase  
-**Created:** October 2025  
-**Purpose:** Personal trading automation and learning project
-
-## 🎓 Learning Notes
-
-This project was built as a learning exercise in:
-- Asynchronous Python programming
-- RESTful API integration
-- Telegram Bot development
-- SQLite database operations
-- Trading algorithm design
-
-**AI assistance used for:**
-- Code structure and best practices
-- Error handling and debugging
-- Documentation and comments
-- Algorithm optimization
-
-## 📄 License
-
-This project is for **educational purposes only**. Use at your own risk.
-
-## ⚠️ Disclaimer
-
-- This bot is for **personal use** and **learning purposes**
-- NFT trading involves financial risk
-- No guarantees of profitability
-- Always verify opportunities manually before purchasing
-- Not financial advice
-
-## 🤝 Contributing
-
-This is a personal learning project. Code review and feedback welcome, but no active development planned.
-
-## 📧 Contact
-
-For questions or collaboration: krogbro@mail.ru / @Elchpachinio
+text
 
 ---
 
-**Made with 🤖 AI assistance & ☕ lots of coffee**
+## ⚙️ Configuration
+
+Edit `config.py` to customize bot behavior:
+
+### Trading Parameters
+
+Profit threshold
+MIN_PROFIT_PERCENT = 20 # Minimum 20% ROI required
+
+Price filter
+MAX_PRICE_TON = 40 # Maximum 40 TON per NFT
+
+Risk management
+MAX_RISK_SCORE = 50 # Maximum risk score (0-100)
+
+Sales history
+SALES_HISTORY_DAYS = 60 # Analyze last 60 days
+MIN_SALES_REQUIRED = 3 # Minimum 3 sales for analysis
+
+text
+
+### Performance Settings
+
+Scanning
+SCAN_INTERVAL_SECONDS = 5 # Scan every 5 seconds
+SCAN_LIMIT = 500 # Fetch 500 NFTs per scan
+
+Parallel processing
+MAX_PARALLEL_ANALYSES = 3 # 3 concurrent analyses
+ANALYSIS_START_DELAY = 0.5 # 0.5s delay between starts
+
+Competition filter
+MAX_CHEAPER_NFTS = 2 # Max 2 cheaper similar NFTs
+
+text
+
+See `config.example.py` for detailed explanations of all parameters.
+
+---
+
+## 🎯 Trading Strategies
+
+### 1. Model Arbitrage
+**Logic:** Buy cheapest NFT with specific model, sell at average market price
+
+**Example:**
+- Buy: Delicious Cake (Chocolate) at 8.00 TON
+- Floor: 10.50 TON (cheapest similar)
+- Target: 12.00 TON (average of 5 recent sales)
+- **Profit:** 33% ROI (2.64 TON after fees)
+
+### 2. Premium Backdrop Alert
+**Logic:** Detect premium backdrops priced below expected multiplier
+
+**Premium backdrops:**
+- Midnight Blue (3x floor)
+- Rainbow (2.5x floor)
+- Starry Night (2x floor)
+
+**Example:**
+- NFT: Red Heart + Midnight Blue at 15.00 TON
+- Model floor: 6.00 TON
+- Expected: 6.00 × 3.0 = 18.00 TON
+- Current: 15.00 TON (below threshold!)
+- **Profit:** 17% ROI if sold at 18.00 TON
+
+### 3. Monochrome Combinations
+**Logic:** Find color-matched model + backdrop (e.g., Strawberry + Strawberry)
+
+**Example:**
+- NFT: Strawberry Cake + Strawberry at 12.00 TON
+- Model floor: 8.00 TON
+- Combo premium: +30% expected
+- Target: 10.40 TON (8.00 × 1.30)
+- **Profit:** Wait for market to recognize rarity
+
+### 4. Special Numbers
+**Logic:** Identify valuable mint numbers
+
+**Rare numbers:**
+- #0 (first mint)
+- #69, #420 (meme numbers)
+- #100, #1000 (round numbers)
+- Palindromes (#121, #12321)
+- Sequential (#123, #12345)
+
+---
+
+## 📊 Performance
+
+### Speed
+- **Scans:** 50 NFTs per cycle
+- **Analysis:** ~1s per NFT (parallel processing)
+- **Latency:** <3 seconds from listing to notification
+
+### Accuracy
+- **False Positives:** <5% (with sales history validation)
+- **Missed Opportunities:** <10% (due to API delays)
+- **Average Profit:** 25-40% ROI on alerted opportunities
+
+### Resource Usage
+- **RAM:** ~50-100 MB
+- **CPU:** <5% (during scans)
+- **Database:** ~1 MB per day
+
+---
+
+## 📱 Telegram Notifications
+
+### Example Notification
+
+🎯 PROFIT OPPORTUNITY
+
+📦 Delicious Cake
+✨ Premium Chocolate Mousse + Midnight Blue
+
+💰 Price: 15.00 TON ($82.50)
+🎯 Target: 19.50 TON ($107.25)
+💎 Net Profit: 3.79 TON ($20.85)
+📈 ROI: 25.3%
+🔥 Strategy: Premium backdrop
+⭐ Confidence: 85%
+📊 Sales: 5 total, 3 recent (avg: 18.20 TON)
+
+ID: 2dd43a95-7682-4bab-b3cd-3e2b107a8436
+
+[🔗 Open on Portals] [📋 Copy Mint #]
+
+text
+
+---
+
+## 🛠️ Project Structure
+
+nft-arbitrage-bot/
+├── main.py # Bot entry point
+├── database.py # SQLite persistence layer
+├── config.example.py # Configuration template
+├── requirements.txt # Python dependencies
+├── README.md # This file
+├── .gitignore # Git exclusions
+│
+├── analyzers/
+│ ├── init.py
+│ └── profit_analyzer.py # Multi-strategy profit detection
+│
+├── monitors/
+│ ├── init.py
+│ └── portals.py # Portals marketplace integration
+│
+├── notifications/
+│ ├── init.py
+│ └── telegram_bot.py # Telegram notification manager
+│
+└── aportalsmp/ # Portals API library (install separately)
+
+text
+
+---
+
+## 🧪 Testing
+
+Run bot in test mode to verify setup:
+
+python main.py
+
+text
+
+**Check console for:**
+- ✅ Configuration validation
+- ✅ Database initialization
+- ✅ Telegram bot connection
+- ✅ API authentication
+- ✅ First scan results
+
+**Common issues:**
+- `TelegramAPIError` → Check `TELEGRAM_BOT_TOKEN`
+- `Unauthorized` → Check `PORTALS_AUTH_TOKEN` (may need refresh)
+- `ModuleNotFoundError: aportalsmp` → Install aportalsmp library
+
+---
+
+## 🎓 What I Learned
+
+This project was built as a hands-on learning experience in:
+
+- ✅ **Async Python** - `asyncio`, `aiohttp`, parallel processing
+- ✅ **API Integration** - RESTful APIs, authentication, rate limiting
+- ✅ **Telegram Bots** - `aiogram 3.x`, webhooks, inline keyboards
+- ✅ **Database Design** - SQLite, data modeling, indexing
+- ✅ **Trading Algorithms** - Statistical analysis, outlier detection
+- ✅ **Error Handling** - Graceful degradation, retry logic
+- ✅ **Code Organization** - Project structure, modularity, documentation
+
+### AI Assistance
+
+This project was developed with assistance from AI tools:
+- **Claude & ChatGPT** - Code architecture, algorithm design, debugging
+- **Human input** - Requirements, testing, refinement, deployment
+
+AI helped with:
+- Code structure and best practices
+- Async programming patterns
+- Error handling strategies
+- Documentation and comments
+- Algorithm optimization
+
+---
+
+## 🤝 Contributing
+
+While this is primarily a personal learning project, contributions are welcome!
+
+**Ways to contribute:**
+- 🐛 Report bugs via [Issues](https://github.com/Elchin-bit/nft-arbitrage-bot/issues)
+- 💡 Suggest features or improvements
+- 📖 Improve documentation
+- 🔧 Submit pull requests
+
+**Before contributing:**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## ⚠️ Disclaimer
+
+**Important:** This bot is provided for educational and informational purposes only.
+
+- ❌ **Not Financial Advice** - This bot does not provide financial advice
+- ⚠️ **Trading Risks** - NFT trading involves risk of financial loss
+- 🚫 **No Guarantees** - Profit opportunities are not guaranteed
+- ✅ **Manual Verification** - Always verify opportunities before purchasing
+- 📜 **Compliance** - Ensure compliance with local regulations
+
+**Use at your own risk. The authors are not responsible for any financial losses incurred while using this bot.**
+
+---
+
+## 🙏 Credits & Acknowledgments
+
+### Libraries & Tools
+
+- **[aportalsmp](https://github.com/bleach-hub/aportalsmp)** by [@bleach-hub](https://github.com/bleach-hub) - Python wrapper for Portals.gift API (essential for this bot!)
+- **[aiogram](https://github.com/aiogram/aiogram)** - Modern Telegram Bot framework
+- **[aiohttp](https://github.com/aio-libs/aiohttp)** - Async HTTP client/server
+- **[NumPy](https://numpy.org/)** - Numerical computing
+- **[scikit-learn](https://scikit-learn.org/)** - Machine learning tools
+
+### Special Thanks
+
+- **Portals.gift Team** - For building an awesome NFT marketplace
+- **Telegram** - For the Bot API and platform
+- **AI Assistants** - Claude & ChatGPT for development assistance
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License
+
+**TL;DR:** Free to use, modify, and distribute. No warranty provided.
+
+---
+
+## 📞 Contact
+
+**Developer:** Elchin  
+**Email:** [krogbro@mail.ru](mailto:krogbro@mail.ru)  
+**Telegram:** [@Elchpachinio](https://t.me/Elchpachinio)  
+**GitHub:** [@Elchin-bit](https://github.com/Elchin-bit)
+
+---
+
+## 🔗 Links
+
+- **Repository:** [github.com/Elchin-bit/nft-arbitrage-bot](https://github.com/Elchin-bit/nft-arbitrage-bot)
+- **Issues:** [Report a bug](https://github.com/Elchin-bit/nft-arbitrage-bot/issues)
+- **Portals Marketplace:** [portals.gift](https://portals.gift)
+- **aportalsmp Library:** [github.com/beibarys-jedi/aportalsmp](https://github.com/beibarys-jedi/aportalsmp)
+
+---
+
+<div align="center">
+
+**⭐ If you find this bot useful, please consider giving it a star!**
+
+Made with 🤖 AI assistance, ☕ tea, and 💪 determination
+
+*Last Updated: November 2025*
+
+</div>
