@@ -7,7 +7,8 @@
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)
 
-**Automated NFT arbitrage trading bot for Telegram Gifts marketplace with real-time profit opportunity detection and multi-strategy analysis**
+**Automated NFT arbitrage trading bot for Telegram Gifts marketplace with real-time profit opportunity detection and
+multi-strategy analysis**
 
 [Features](#-features) • [Installation](#-installation) • [Configuration](#%EF%B8%8F-configuration) • [Strategies](#-trading-strategies) • [Results](#-performance) • [Disclaimer](#%EF%B8%8F-disclaimer)
 
@@ -17,15 +18,18 @@
 
 ## 📖 About
 
-Advanced trading bot for **Portals.gift** (Telegram Gifts) marketplace that automatically detects profitable NFT arbitrage opportunities using multiple analysis strategies and sends real-time Telegram notifications.
+Advanced trading bot for **Portals.gift** (Telegram Gifts) marketplace that automatically detects profitable NFT
+arbitrage opportunities using multiple analysis strategies and sends real-time Telegram notifications.
 
-**Built with AI assistance** (Claude, ChatGPT) as part of my learning journey in Python, async programming, and algorithmic trading systems.
+**Built with AI assistance** (Claude, ChatGPT) as part of my learning journey in Python, async programming, and
+algorithmic trading systems.
 
 ---
 
 ## ✨ Features
 
 ### 🎯 Core Functionality
+
 - **Real-time Monitoring** - Scans marketplace every 5 seconds for new listings
 - **Multi-Strategy Analysis** - 4 different profit detection algorithms
 - **Smart Price Prediction** - Statistical analysis of 60-day sales history
@@ -40,6 +44,7 @@ Advanced trading bot for **Portals.gift** (Telegram Gifts) marketplace that auto
 4. **Special Number Detection** - Identify valuable mint numbers (#0, #69, #420, palindromes)
 
 ### 📱 Telegram Integration
+
 - Rich formatted notifications with NFT details
 - Interactive buttons (Open on Portals, Copy Mint #)
 - Price analysis with TON/USD conversion
@@ -61,8 +66,6 @@ Advanced trading bot for **Portals.gift** (Telegram Gifts) marketplace that auto
 git clone https://github.com/Elchin-bit/nft-arbitrage-bot.git
 cd nft-arbitrage-bot
 
-text
-
 ### Step 2: Create Virtual Environment
 
 Create venv
@@ -75,28 +78,22 @@ venv\Scripts\activate
 Linux/Mac:
 source venv/bin/activate
 
-text
-
 ### Step 3: Install Dependencies
 
 pip install -r requirements.txt
-
-text
 
 ### Step 4: Install aportalsmp Library
 
 **Important:** The `aportalsmp` library is not available via pip and must be installed manually.
 
 Clone the library
-git clone https://github.com/bleach-hub/aportalsmp
+git clone https://github.com/bleach-hub/aportalsmp.git
 
 Copy to project root
 cp -r aportalsmp/aportalsmp ./
 
 Verify installation
 python -c "import aportalsmp; print('✓ aportalsmp installed successfully')"
-
-text
 
 **Credit:** Special thanks to [@bleach-hub](https://github.com/bleach-hub) for the `aportalsmp` library!
 
@@ -108,39 +105,36 @@ cp config.example.py config.py
 Edit with your credentials
 nano config.py # or any text editor
 
-text
-
 **Required credentials:**
 
 1. **TELEGRAM_BOT_TOKEN**
-   - Get from [@BotFather](https://t.me/BotFather) on Telegram
-   - Create new bot: `/newbot`
+    - Get from [@BotFather](https://t.me/BotFather) on Telegram
+    - Create new bot: `/newbot`
 
 2. **TELEGRAM_CHAT_ID**
-   - Get from [@userinfobot](https://t.me/userinfobot) on Telegram
-   - Just start the bot and copy your ID
+    - Get from [@userinfobot](https://t.me/userinfobot) on Telegram
+    - Just start the bot and copy your ID
 
 3. **PORTALS_AUTH_TOKEN**
-   - Open (https://web.telegram.org/k/#@portals) in browser
-   - Press F12 (DevTools) → Network tab
-   - Look for any API request
-   - Copy `Authorization` header value
-   - See `config.example.py` for detailed instructions
+    - Open [https://web.telegram.org/k/#@portals](https://web.telegram.org/k/#@portals) in browser
+    - Press F12 (DevTools) → Network tab
+    - Look for any API request
+    - Copy `Authorization` header value
+    - See `config.example.py` for detailed instructions
 
 ### Step 6: Run Bot
 
 python main.py
 
-text
-
 **Expected output:**
+
 ============================================================
 🚀 NFT GIFT BOT v2.2 STARTING
 ⚙️ Configuration:
 
 Min Profit: 20%
 
-Max Price: 5000 TON
+Max Price: Configurable
 
 Scan Interval: 5s
 
@@ -152,7 +146,7 @@ Sales History: 60 days
 🔄 CYCLE #1 | 2025-11-19 20:30:00
 ============================================================
 
-text
+
 
 ---
 
@@ -166,7 +160,7 @@ Profit threshold
 MIN_PROFIT_PERCENT = 20 # Minimum 20% ROI required
 
 Price filter
-MAX_PRICE_TON = 40 # Maximum 40 TON per NFT
+MAX_PRICE_TON = 40 # Maximum price per NFT (configurable)
 
 Risk management
 MAX_RISK_SCORE = 50 # Maximum risk score (0-100)
@@ -174,8 +168,6 @@ MAX_RISK_SCORE = 50 # Maximum risk score (0-100)
 Sales history
 SALES_HISTORY_DAYS = 60 # Analyze last 60 days
 MIN_SALES_REQUIRED = 3 # Minimum 3 sales for analysis
-
-text
 
 ### Performance Settings
 
@@ -190,8 +182,6 @@ ANALYSIS_START_DELAY = 0.5 # 0.5s delay between starts
 Competition filter
 MAX_CHEAPER_NFTS = 2 # Max 2 cheaper similar NFTs
 
-text
-
 See `config.example.py` for detailed explanations of all parameters.
 
 ---
@@ -199,23 +189,28 @@ See `config.example.py` for detailed explanations of all parameters.
 ## 🎯 Trading Strategies
 
 ### 1. Model Arbitrage
+
 **Logic:** Buy cheapest NFT with specific model, sell at average market price
 
 **Example:**
+
 - Buy: Delicious Cake (Chocolate) at 8.00 TON
 - Floor: 10.50 TON (cheapest similar)
 - Target: 12.00 TON (average of 5 recent sales)
 - **Profit:** 33% ROI (2.64 TON after fees)
 
 ### 2. Premium Backdrop Alert
+
 **Logic:** Detect premium backdrops priced below expected multiplier
 
 **Premium backdrops:**
+
 - Midnight Blue (3x floor)
 - Rainbow (2.5x floor)
 - Starry Night (2x floor)
 
 **Example:**
+
 - NFT: Red Heart + Midnight Blue at 15.00 TON
 - Model floor: 6.00 TON
 - Expected: 6.00 × 3.0 = 18.00 TON
@@ -223,9 +218,11 @@ See `config.example.py` for detailed explanations of all parameters.
 - **Profit:** 17% ROI if sold at 18.00 TON
 
 ### 3. Monochrome Combinations
+
 **Logic:** Find color-matched model + backdrop (e.g., Strawberry + Strawberry)
 
 **Example:**
+
 - NFT: Strawberry Cake + Strawberry at 12.00 TON
 - Model floor: 8.00 TON
 - Combo premium: +30% expected
@@ -233,9 +230,11 @@ See `config.example.py` for detailed explanations of all parameters.
 - **Profit:** Wait for market to recognize rarity
 
 ### 4. Special Numbers
+
 **Logic:** Identify valuable mint numbers
 
 **Rare numbers:**
+
 - #0 (first mint)
 - #69, #420 (meme numbers)
 - #100, #1000 (round numbers)
@@ -247,16 +246,19 @@ See `config.example.py` for detailed explanations of all parameters.
 ## 📊 Performance
 
 ### Speed
+
 - **Scans:** 50 NFTs per cycle
 - **Analysis:** ~1s per NFT (parallel processing)
 - **Latency:** <3 seconds from listing to notification
 
 ### Accuracy
+
 - **False Positives:** <5% (with sales history validation)
 - **Missed Opportunities:** <10% (due to API delays)
 - **Average Profit:** 25-40% ROI on alerted opportunities
 
 ### Resource Usage
+
 - **RAM:** ~50-100 MB
 - **CPU:** <5% (during scans)
 - **Database:** ~1 MB per day
@@ -284,13 +286,13 @@ ID: 2dd43a95-7682-4bab-b3cd-3e2b107a8436
 
 [🔗 Open on Portals] [📋 Copy Mint #]
 
-text
 
 ---
 
 ## 🛠️ Project Structure
 
 nft-arbitrage-bot/
+│
 ├── main.py # Bot entry point
 ├── database.py # SQLite persistence layer
 ├── config.example.py # Configuration template
@@ -312,7 +314,6 @@ nft-arbitrage-bot/
 │
 └── aportalsmp/ # Portals API library (install separately)
 
-text
 
 ---
 
@@ -322,9 +323,8 @@ Run bot in test mode to verify setup:
 
 python main.py
 
-text
-
 **Check console for:**
+
 - ✅ Configuration validation
 - ✅ Database initialization
 - ✅ Telegram bot connection
@@ -332,6 +332,7 @@ text
 - ✅ First scan results
 
 **Common issues:**
+
 - `TelegramAPIError` → Check `TELEGRAM_BOT_TOKEN`
 - `Unauthorized` → Check `PORTALS_AUTH_TOKEN` (may need refresh)
 - `ModuleNotFoundError: aportalsmp` → Install aportalsmp library
@@ -353,10 +354,12 @@ This project was built as a hands-on learning experience in:
 ### AI Assistance
 
 This project was developed with assistance from AI tools:
+
 - **Claude & ChatGPT** - Code architecture, algorithm design, debugging
 - **Human input** - Requirements, testing, refinement, deployment
 
 AI helped with:
+
 - Code structure and best practices
 - Async programming patterns
 - Error handling strategies
@@ -370,12 +373,14 @@ AI helped with:
 While this is primarily a personal learning project, contributions are welcome!
 
 **Ways to contribute:**
+
 - 🐛 Report bugs via [Issues](https://github.com/Elchin-bit/nft-arbitrage-bot/issues)
 - 💡 Suggest features or improvements
 - 📖 Improve documentation
 - 🔧 Submit pull requests
 
 **Before contributing:**
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
@@ -402,7 +407,8 @@ While this is primarily a personal learning project, contributions are welcome!
 
 ### Libraries & Tools
 
-- **[aportalsmp](https://github.com/bleach-hub/aportalsmp)** by [@bleach-hub](https://github.com/bleach-hub) - Python wrapper for Portals.gift API (essential for this bot!)
+- **[aportalsmp](https://github.com/bleach-hub/aportalsmp)** by [@bleach-hub](https://github.com/bleach-hub) - Python
+  wrapper for Portals.gift API (essential for this bot!)
 - **[aiogram](https://github.com/aiogram/aiogram)** - Modern Telegram Bot framework
 - **[aiohttp](https://github.com/aio-libs/aiohttp)** - Async HTTP client/server
 - **[NumPy](https://numpy.org/)** - Numerical computing
@@ -418,7 +424,7 @@ While this is primarily a personal learning project, contributions are welcome!
 
 ## 📄 License
 
-This project is licensed under the MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 **TL;DR:** Free to use, modify, and distribute. No warranty provided.
 
@@ -438,7 +444,7 @@ This project is licensed under the MIT License
 - **Repository:** [github.com/Elchin-bit/nft-arbitrage-bot](https://github.com/Elchin-bit/nft-arbitrage-bot)
 - **Issues:** [Report a bug](https://github.com/Elchin-bit/nft-arbitrage-bot/issues)
 - **Portals Marketplace:** [portals.gift](https://portals.gift)
-- **aportalsmp Library:** [github.com/beibarys-jedi/aportalsmp](https://github.com/beibarys-jedi/aportalsmp)
+- **aportalsmp Library:** [github.com/bleach-hub/aportalsmp](https://github.com/bleach-hub/aportalsmp)
 
 ---
 
@@ -446,7 +452,7 @@ This project is licensed under the MIT License
 
 **⭐ If you find this bot useful, please consider giving it a star!**
 
-Made with 🤖 AI assistance, ☕ tea, and 💪 determination
+Made with 🤖 AI assistance, 🍵 tea, and 💪 determination
 
 *Last Updated: November 2025*
 
