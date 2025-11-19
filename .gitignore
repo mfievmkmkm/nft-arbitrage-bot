@@ -1,59 +1,349 @@
-# Secrets and credentials
-config.py
-*.env
-.env.local
+# ============================================================================
+# NFT Gift Bot - Git Ignore Rules
+# ============================================================================
+# Prevents sensitive data, credentials, and generated files from being
+# committed to version control.
+#
+# IMPORTANT: Before first commit, verify that config.py and *.db files
+# are NOT tracked with: git status
+#
+# Repository: https://github.com/Elchin-bit/nft-arbitrage-bot
+# ============================================================================
 
-# Database files
+
+# ============================================================================
+# 🔐 SECRETS & CREDENTIALS (NEVER COMMIT!)
+# ============================================================================
+# Configuration files with API keys and tokens
+config.py
+secrets.py
+credentials.json
+
+# Environment variables
+*.env
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Authentication tokens
+auth_token.txt
+*.token
+*.key
+*.pem
+
+
+# ============================================================================
+# 💾 DATABASE FILES
+# ============================================================================
+# SQLite databases
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
 nft_gifts.db
+nft_bot.db
 
-# Logs
+# Database backups
+*.db.backup
+*.sqlite.backup
+backups/*.db
+data/*.db
+
+
+# ============================================================================
+# 📝 LOGS & MONITORING
+# ============================================================================
+# Log files
 *.log
+*.log.*
 nft_bot.log
-logs/
+error.log
+debug.log
 
-# Python
+# Log directories
+logs/
+log/
+*.logs/
+
+# Rotating logs
+*.log.[0-9]*
+
+
+# ============================================================================
+# 🐍 PYTHON
+# ============================================================================
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-build/
-*.egg
+*.pyc
+*.pyo
+*.pyd
 
-# Virtual environments
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+
+# ============================================================================
+# 🧪 TESTING & COVERAGE
+# ============================================================================
+# pytest
+.pytest_cache/
+.pytest_cache
+pytest.ini
+
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+coverage.xml
+*.coveragerc
+
+# Unit test / benchmark files
+test_results/
+benchmarks/
+
+
+# ============================================================================
+# 🌐 VIRTUAL ENVIRONMENTS
+# ============================================================================
+# virtualenv
 venv/
 env/
 ENV/
 .venv
+.env
+virtualenv/
+venv.bak/
 
-# IDE
+# Poetry
+.poetry/
+poetry.lock
+
+# Pipenv
+Pipfile.lock
+
+# pyenv
+.python-version
+
+
+# ============================================================================
+# 💻 IDE & EDITORS
+# ============================================================================
+# Visual Studio Code
 .vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# PyCharm
 .idea/
-*.swp
-*.swo
+.idea/*
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
 *.sublime-project
 *.sublime-workspace
 
-# OS
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+*.vim
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# VS
+.vs/
+
+
+# ============================================================================
+# 🖥️ OPERATING SYSTEM
+# ============================================================================
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
 Thumbs.db
-desktop.ini
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
+# Linux
+*~
+.directory
+.Trash-*
 
+
+# ============================================================================
+# 📦 PROJECT-SPECIFIC
+# ============================================================================
+# Bot output files
+output/
+results/
+reports/
+
+# Temporary analysis files
+analysis_cache/
+*.cache
+
+# User data
+user_data/
+profiles/
+
+# Downloaded NFT images
+images/
+nft_images/
+cache/
+
+
+# ============================================================================
+# 🔄 TEMPORARY & BACKUP FILES
+# ============================================================================
 # Temporary files
 *.tmp
+*.temp
 *.bak
+*.swp
+*.swo
 *~
-"main.spec" 
-"start_bot.bat" 
-"*.spec" 
-"*.bat" 
+.~lock.*
+
+# Backup files
+*.backup
+*.old
+*.orig
+*_backup
+*_old
+
+# Patch files
+*.patch
+*.diff
+
+
+# ============================================================================
+# 📊 DATA & EXPORTS
+# ============================================================================
+# CSV exports
+exports/*.csv
+data/*.csv
+
+# JSON data files
+data/*.json
+!data/example.json
+
+# Excel files
+*.xlsx
+*.xls
+
+
+# ============================================================================
+# 🚀 DEPLOYMENT & CI/CD
+# ============================================================================
+# Docker
+*.dockerignore
+docker-compose.override.yml
+
+# CI/CD secrets
+.github/secrets/
+.gitlab-ci-local/
+
+# Deployment scripts with credentials
+deploy_prod.sh
+deploy_*.sh
+
+
+# ============================================================================
+# 📚 DOCUMENTATION BUILDS
+# ============================================================================
+# Sphinx documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# mkdocs
+site/
+
+
+# ============================================================================
+# 🎯 KEEP THESE (Force Include)
+# ============================================================================
+# Keep example files
+!config.example.py
+!.env.example
+!data/example.json
+
+# Keep documentation
+!README.md
+!docs/*.md
+!CHANGELOG.md
+!LICENSE
+
+# Keep GitHub workflows
+!.github/workflows/*.yml
+
+# Test files
+test_sales.py
+test_*.py
+
+# Scripts
+start_bot.bat
+*.bat
+
+# Local development folder 
+aportalsmp/
