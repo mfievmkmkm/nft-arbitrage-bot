@@ -128,24 +128,22 @@ python main.py
 
 **Expected output:**
 
+```text
 ============================================================
 🚀 NFT GIFT BOT v2.2 STARTING
+============================================================
 ⚙️ Configuration:
-
-Min Profit: 20%
-
-Max Price: Configurable
-
-Scan Interval: 5s
-
-Sales History: 60 days
+  • Min Profit:         20%
+  • Max Price:          Configurable
+  • Scan Interval:      5s
+  • Sales History:      60 days
 ============================================================
 ✅ NFTGiftBot initialized successfully
 🚀 Starting Telegram bot polling...
 ============================================================
 🔄 CYCLE #1 | 2025-11-19 20:30:00
 ============================================================
-
+```
 
 
 ---
